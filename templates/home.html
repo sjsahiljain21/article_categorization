@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Home</title>
+	<!-- <link rel="stylesheet" type="text/css" href="../static/css/styles.css"> -->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+	<header>
+		<div class="container">
+		<div id="brandname">
+			Machine Learning for Category Prediction
+		</div>
+		<h2>Category Prediction</h2>
+		
+	</div>
+	</header>
+
+	<div class="ml-container">
+		
+		<form action="{{ url_for('predict')}}" method="POST">
+		<p>Enter Your Headline Here</p>
+		<textarea name="headline" rows="2" cols="50"></textarea>
+
+		<form action="{{ url_for('predict')}}" method="POST">
+		<p>Enter Your Article Here</p>
+		<!-- <input type="text" name="comment"/> -->
+		<textarea name="message" rows="6" cols="50"></textarea>
+		<br/>
+
+		<input type="submit" class="btn-info" value="predict">
+		
+	</form>
+	
+	<br>
+	<br>
+	{{prediction}}
+
+</div>
+
+	
+	
+
+</body>
+</html>
