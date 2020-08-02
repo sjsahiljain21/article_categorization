@@ -34,9 +34,14 @@ def predict():
         headline = [Headline]
         body = [Body]
         all_articles = pd.DataFrame({'_source.headline': headline, '_source.body': body})
-        all_articles['headline_body'] = all_articles['_source.headline'] + " " + all_articles['_source.body']
+        all_articles['headline_body'] = all_articles['_source.headline'] + " " + \
+                                                 all_articles['_source.body']
         all_articles['headline_body'] = all_articles['headline_body'].str.lower()
-        all_articles['headline_body'] = all_articles['headline_body'].str.replace('http\S+|www.\S+', '', case=False)
+        all_articles['headline_body'] = all_articles['headline_body'].str.replace(
+            r'<.*?>|&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-f]{1,6});', ' ')
+        all_articles['headline_body'] = all_articles['headline_body'].str.replace('\r|\n', ' ')
+        all_articles['headline_body'] = all_articles['headline_body'].str.replace('http\S+|www.\S+',
+                                                                                                    ' ', case=False)
         all_articles['headline_body'] = all_articles['headline_body'].str.replace("[^a-z-']+", " ")
         all_articles['headline_body'] = all_articles['headline_body'].str.replace("\s+", " ")
 
@@ -210,122 +215,221 @@ def predict():
 
         final_article = pd.merge(all_articles, top_prob[['final_cat_1', 'final_cat_2']], left_index=True,
                                  right_index=True)
+
         final_article['ML_category'] = final_article['final_cat_1'] + ', ' + final_article['final_cat_2']
 
-        # final_article['Advertising_and_Marketing'] = np.where((all_articles['_source.body'].str.contains(r'\bad\b|\bmarketing\b', case = False)) & (all_articles['ML_category'].str.contains(r'\bothers\b')), 'Advertising_and_Marketing', "")
-
-        final_article['Agriculture'] = np.where((final_article['_source.headline'].str.contains(
-            r'\bagriculture\b|\bfarming\b|\bfarmers\b|\bagritech\b|\bagri-tech\b', case=False, na=False)) & (
-                                                    final_article['ML_category'].str.contains(
-                                                        r'\bbusiness\b|\bothers\b', na=False)), 'Agriculture', "")
-
-        # final_article['Arts_and_Culture'] = np.where((all_articles['_source.body'].str.contains(r'\bagriculture\b|\bfarming\b|\bfarmers\b|\bagritech\b', case = False)) & (all_articles['ML_category'].str.contains(r'\bbusiness\b|\bothers\b'), 'Agriculture', "")
-
-        final_article['Aviation'] = np.where((final_article['_source.headline'].str.contains(
-            r'\bflights\b|\bairline\b|\bindigo\b|\bjet airways\b|\bvistara\b|\bair asia\b|\bgo air\b|\bair india\b|\baviation\b',
+        final_article['agriculture_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'\bagriculture\b|\bfarming\b|farmer|\bagritech\b|\bagri-tech\b|\bcotton\b|\bcrop\b|\brajma\b|quintal|cotton seed|cotton yarn|cotton price|seed price|\bgreen pea\b|rajma price|seed production|basmati rice|cotton association|\bagri\b',
             case=False, na=False)) & (final_article['ML_category'].str.contains(
-            r'\bbusiness\b|\bothers\b|\bmarkets\b|\bfinance\b', na=False)), 'Aviation', "")
+            r'\bbusiness\b|\bothers\b|\bmarkets\b|\bfinance\b|\beconomy\b', na=False)), 'agriculture', "")
+        final_article['agriculture'] = np.where((final_article['_source.body'].str.contains(
+            r'cotton seed|cotton yarn|cotton price|seed price|rajma price|indian cotton|seed production|basmati rice|cotton association|cargill india',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bothers\b|\bmarkets\b|\bfinance\b|\beconomy\b', na=False)), 'agriculture',
+                                                final_article['agriculture_headline'])
 
-        final_article['Blockchain'] = np.where((final_article['_source.body'].str.contains(
-            r'\bbitcoin\b|\bcrypto\b|\bethereum\b|\blitecoin\b|\bblockchain\b', case=False, na=False)) & (
-                                                   final_article['ML_category'].str.contains(
-                                                       r'\bbusiness\b|\bothers\b|\bmarkets\b|\bfinance\b|\bbanking\b',
-                                                       na=False)), 'Blockchain', "")
+        final_article['oil_and_energy_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'\bongc\b|aramco|bpcl|reliance petroleum|\bgail\b|petrol|diesel|\bioc\b|\bbhel\b|\bntpc\b|\boil\b|\benergy\b|indian oil|\btotal s.a\b|royal dutch shell',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bmarkets\b|\bfinance\b|\beconomy\b', na=False)), 'oil_and_energy', "")
+        final_article['oil_and_energy'] = np.where((final_article['_source.body'].str.contains(
+            r'KG-D6|krishna godavari basin|petroleum ministry|\blpg\b|gasoline|bharat gas|indiane', case=False,
+            na=False)) & (final_article['ML_category'].str.contains(r'\bbusiness\b|\bmarkets\b|\bfinance\b|\beconomy\b',
+                                                                    na=False)), 'oil_and_energy',
+                                                   final_article['oil_and_energy_headline'])
 
-        final_article['Consumer_Tech'] = np.where((final_article['_source.headline'].str.contains(
-            r'gadget|mobile|laptop|electronics|wearables|consumer-tech|consumer tech', case=False, na=False)) & (
-                                                      final_article['ML_category'].str.contains(
-                                                          r'\bbusiness\b|\btech\b|\bstartup\b', na=False)),
-                                                  'Consumer_Tech', "")
+        final_article['aviation_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'air Charters|air india|aviation|indian airlines|paramount airways|go air|kingfisher airlines|spice jet|air sahara|jet airways|vistara|flight|virgin airlines|spaceX',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bothers\b|\bmarkets\b|\bfinance\b|\beconomy\b', na=False)), 'aviation', "")
+        final_article['aviation'] = np.where(
+            (final_article['_source.body'].str.contains(r'aviation', case=False, na=False)) & (
+                final_article['ML_category'].str.contains(r'\bbusiness\b|\bothers\b|\bmarkets\b|\bfinance\b|\beconomy',
+                                                          na=False)), 'aviation', final_article['aviation_headline'])
 
-        final_article['Covid_Electronic'] = np.where(
-            final_article['_source.body'].str.contains(r'corona virus|covid-19|\bcovid\b|covid - 19|coronavirus',
-                                                       case=False, na=False), 'Covid_Electronic', "")
+        final_article['blockchain'] = np.where((final_article['_source.body'].str.contains(
+            r'\bbitcoin\b|\bcrypto\b|\bethereum\b|\blitecoin\b|\bblockchain\b|\bxrp\b|\bZebpay\b', case=False,
+            na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bothers\b|\bmarkets\b|\bfinance\b|\bbanking\b|\btech\b|\bstartup\b', na=False)),
+                                               'blockchain', "")
 
-        final_article['Covid_Online'] = np.where(
-            final_article['_source.body'].str.contains(r'corona virus|covid-19|\bcovid\b|covid - 19|coronavirus',
-                                                       case=False, na=False), 'Covid_Online', "")
+        final_article['cybersecurity'] = np.where((final_article['_source.body'].str.contains(
+            r'hacker|encryption|decryption|encrypted|decrypted|cybersecurity|hacked|cybercrime|cyber crime', case=False,
+            na=False)) & (final_article['ML_category'].str.contains(r'\bbusiness\b|\btech\b', na=False)),
+                                                  'cybersecurity', "")
 
-        final_article['Cryptocurrency'] = np.where((final_article['_source.body'].str.contains(
-            r'\bbitcoin\b|\bcrypto\b|\bethereum\b|\blitecoin\b', case=False, na=False)) & (
-                                                       final_article['ML_category'].str.contains(
-                                                           r'\bbusiness\b|\bothers\b|\bmarkets\b|\bfinance\b|\bbanking\b',
-                                                           na=False)), 'Cryptocurrency', "")
+        final_article['consumertech_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'gadget|mobile|laptop|electronic|wearables|samsung galaxy|iphone|google pixel|xiaomi|realme|speaker|\btv\b|smart watch|smartphone|earphones|bezeless',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(r'\bbusiness\b|\btech\b|\bstartup\b',
+                                                                                na=False)), 'consumer_tech', "")
+        final_article['consumer_tech'] = np.where((final_article['_source.body'].str.contains(
+            r'snapdragon|mediatek|exynos|intel processor|inch display|amd radeon|smart watch|wireless earphones|smart tv',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(r'\bbusiness\b|\btech\b|\bstartup\b',
+                                                                                na=False)), 'consumer_tech',
+                                                  final_article['consumertech_headline'])
 
-        final_article['E_commerce'] = np.where((final_article['_source.headline'].str.contains(
-            r'flipkart|e-commerce|\bmyntra\b|\bjabong\b|snapdeal|\balibaba\b', case=False, na=False)) & (
+        # final_article['Covid_Electronic'] = np.where(final_article['_source.body'].str.contains(r'corona virus|covid-19|\bcovid\b|covid - 19|coronavirus', case = False, na = False), 'Covid_Electronic', "")
+
+        # final_article['Covid_Online'] = np.where(final_article['_source.body'].str.contains(r'corona virus|covid-19|\bcovid\b|covid - 19|coronavirus', case = False, na = False), 'Covid_Online', "")
+
+        # final_article['Cryptocurrency'] = np.where((final_article['_source.body'].str.contains(r'\bbitcoin\b|\bcrypto\b|\bethereum\b|\blitecoin\b', case = False, na = False)) & (final_article['ML_category'].str.contains(r'\bbusiness\b|\bothers\b|\bmarkets\b|\bfinance\b|\bbanking\b', na = False)), 'Cryptocurrency', "")
+
+        final_article['ecommerce_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'flipkart|e-commerce|ecommerce|myntra|jabong|snapdeal|alibaba|commerce industry|ecommerce company|ali baba|ebay|india mart|indiamart|justdial|makemytrip|bookmyshow|1mg',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\blogistics\b|\bstartup\b|\btech\b|\bothers\b', na=False)), 'e_commerce', "")
+        final_article['e_commerce'] = np.where((final_article['_source.body'].str.contains(
+            r'commerce industry|ecommerce company|ecommerce', case=False, na=False)) & (
                                                    final_article['ML_category'].str.contains(
                                                        r'\bbusiness\b|\blogistics\b|\bstartup\b|\btech\b|\bothers\b',
-                                                       na=False)), 'E_Commerce', "")
+                                                       na=False)), 'e_commerce', final_article['ecommerce_headline'])
 
-        final_article['Fintech'] = np.where((final_article['_source.body'].str.contains(
-            r'fintech|payment gateway|banking technologies|fin-tech', case=False, na=False)) & (
-                                                final_article['ML_category'].str.contains(
-                                                    r'\bbusiness\b|\bfinance\b|\bstartup\b|\btech\b|\bbanking\b',
-                                                    na=False)), 'Fintech', "")
-
-        final_article['FMCG'] = np.where((final_article['_source.headline'].str.contains(
-            r'\bfmcg\b|fast moving consumer goods|\bhindustan unilever\b|\bcolgate-palmolive\b|\bitc\b|\bnestle\b|\bparle\b|\bbritannia\b|\bmarico\b|\bp&g\b|\bprocter and gamble\b|\bgodrej\b|\bamul\b|\bhul\b',
+        final_article['fintech_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'zerodha|paytm|googlepay|phonepe|phone-pe|\bupi\b|google-pay', case=False, na=False)) & (
+                                                         final_article['ML_category'].str.contains(
+                                                             r'\bbusiness\b|\bfinance\b|\bstartup\b|\btech\b|\bbanking\b',
+                                                             na=False)), 'fintech', "")
+        final_article['fintech'] = np.where((final_article['_source.body'].str.contains(
+            r'payment gateway|digital payment|payment service|upi payment|fintech|fin-tech|Digital Transaction|Digital Wallet',
             case=False, na=False)) & (final_article['ML_category'].str.contains(
-            r'\bbusiness\b|\bfood\b|\blogistics\b|\bothers\b', na=False)), 'FMCG', "")
+            r'\bbusiness\b|\bfinance\b|\bstartup\b|\btech\b|\bbanking\b', na=False)), 'fintech',
+                                            final_article['fintech_headline'])
 
-        final_article['HR'] = np.where((final_article['_source.headline'].str.contains(
-            r'\brecruitment\b|human resource|\bhiring\b|\bhrm\b|\bhr\b|\bhire\b|\bhired\b', case=False, na=False)) & (
-                                           final_article['ML_category'].str.contains(r'\beducation\b|\bothers\b',
-                                                                                     na=False)), 'HR', "")
+        final_article['fmcg_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'\bfmcg\b|fast moving consumer goods|\bhindustan unilever\b|\bcolgate-palmolive\b|\bitc\b|\bnestle\b|\bparle\b|\bbritannia\b|\bmarico\b|\bp&g\b|\bprocter and gamble\b|\bamul\b|\bhul\b|\bpatanjali\b|cargill india|\bdabur\b|\bgodrej\b',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bfood\b|\blogistics\b|\bothers\b|\bfinance\b|\bmarkets\b|\bstartup\b', na=False)), 'fmcg',
+                                                  "")
+        final_article['fmcg'] = np.where((final_article['_source.body'].str.contains(
+            r'\bfmcg\b|fast moving consumer goods|Food processing|kirana|FSSAI|mom and pop|hyperlocal', case=False,
+            na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bfood\b|\blogistics\b|\bothers\b|\bfinance\b|\bmarkets\b|\bstartup\b', na=False)), 'fmcg',
+                                         final_article['fmcg_headline'])
 
-        final_article['Infrastructure'] = np.where((final_article['_source.headline'].str.contains(
-            r'\bconstruction\b|\bconstructing\b', case=False, na=False)) & (final_article['ML_category'].str.contains(
-            r'\bauto\b|\bbanking\b|\blogistics\b|\bmarkets\b|\bothers\b', na=False)), 'Infrastructure', "")
+        final_article['hr_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'recruitment|human resource|\bhiring\b|\bhr\b|layoff|final placement|company hire|salary hike|average salary|hire people|recruitment company|increasing hiring|increase hiring',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\beducation\b|\bothers\b|\btech\b|\bstartup\b|\bauto\b|\bbanking\b|\bbusiness\b|\beconomy\b|\bfinance\b|\blogistics\b|\bmarkets\b',
+            na=False)), 'hr', "")
+        final_article['hr'] = np.where((final_article['_source.body'].str.contains(
+            r'final placement|company hire|salary hike|average salary|hire people|recruitment company|increasing hiring|increase hiring',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\beducation\b|\bothers\b|\btech\b|\bstartup\b|\bauto\b|\bbanking\b|\bbusiness\b|\beconomy\b|\bfinance\b|\blogistics\b|\bmarkets\b',
+            na=False)), 'hr', final_article['hr_headline'])
 
-        final_article['IT'] = np.where((final_article['_source.headline'].str.contains(
+        final_article['infrastructure'] = np.where((final_article['_source.body'].str.contains(
+            r'\bconstruction\b|\bconstructing\b|Toll Tax|Circle rate|special economic zone|\bsez\b|\bbhk\b|Ministry of Road and Transportation|Border Roads Organization|\bNHAI\b|Real Estate|Lodha Group|Essel Infra',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bauto\b|\bbanking\b|\blogistics\b|\bmarkets\b|\bothers\b|\bbusiness\b|\beconomy\b|\bfinance\b',
+            na=False)), 'infrastructure', "")
+
+        final_article['it_headline'] = np.where((final_article['_source.headline'].str.contains(
             r'\btcs\b|\btata consultancy services\b|\binfosys\b|\bwipro\b|\bhcl\b|\btech mahindra\b|\boracle\b|\bmindtree\b|\bit industry\b|\bit industries\b',
             case=False, na=False)) & (final_article['ML_category'].str.contains(
             r'\btech\b|\bfinance\b|\bmarkets\b|\beconomy\b|\bothers\b', na=False)), 'IT', "")
+        final_article['IT'] = np.where(
+            (final_article['_source.body'].str.contains(r'it industry|it industries', case=False, na=False)) & (
+                final_article['ML_category'].str.contains(r'\btech\b|\bfinance\b|\bmarkets\b|\beconomy\b|\bothers\b',
+                                                          na=False)), 'IT', final_article['it_headline'])
 
-        final_article['Legal'] = np.where((final_article['_source.headline'].str.contains(
-            r'\baffidavit\b|\bcompliance\b|\blegal notice\b', case=False, na=False)) & (
-                                              final_article['ML_category'].str.contains(
-                                                  r'\bcrime\b|\bbusiness\b|\beconomy\b|\bothers\b', na=False)), 'Legal',
-                                          "")
+        # final_article['Legal'] = np.where((final_article['_source.body'].str.contains(r'\baffidavit\b|\bcompliance\b|\blegal notice\b', case = False, na = False)) & (final_article['ML_category'].str.contains(r'\bcrime\b|\bbusiness\b|\beconomy\b|\bothers\b', na = False)), 'legal', "")
 
-        final_article['Retail'] = np.where((final_article['_source.headline'].str.contains(
-            r'\bwalmart\b|\bretail\b|\bdmart\b|\bfuture group\b|\bhul\b|\bp&g\b|\bpatanjali\b|\bitc\b|\bbig bazaar\b|\breliance trends\b|\bmaxx\b|\bshoppers stop\b|\bpantaloons\b',
-            case=False, na=False)) & (final_article['ML_category'].str.contains(
-            r'\bbusiness\b|\bfood\b|\blogistics\b|\bothers\b', na=False)), 'Retail', "")
+        # final_article['Retail'] = np.where((final_article['_source.headline'].str.contains(r'\bwalmart\b|\bretail\b|\bdmart\b|\bfuture group\b|\bhul\b|\bp&g\b|\bpatanjali\b|\bitc\b|\bbig bazaar\b|\breliance trends\b|\bmaxx\b|\bshoppers stop\b|\bpantaloons\b', case = False, na = False)) & (final_article['ML_category'].str.contains(r'\bbusiness\b|\bfood\b|\blogistics\b|\bothers\b', na = False)), 'Retail', "")
 
-        final_article['SaaS'] = np.where((final_article['_source.headline'].str.contains(
-            r'\bsaas\b|\bsoftware as a service\b|\bbusiness app\b', case=False, na=False)) & (
+        final_article['SaaS_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'\bSaaS\b|Freshworks|\bZoho\b|Haptik|Hubspot|Slack|Shopify|MailChimp|Chargebee', case=False, na=False)) & (
+                                                      final_article['ML_category'].str.contains(
+                                                          r'\btech\b|\bbusiness\b|\bfinance\b|\bstartup\b|\bothers\b',
+                                                          na=False)), 'SaaS', "")
+        final_article['SaaS'] = np.where((final_article['_source.body'].str.contains(
+            r'\bSaaS\b|chatbot|cloud based software|cloud computing', case=False, na=False)) & (
                                              final_article['ML_category'].str.contains(
                                                  r'\btech\b|\bbusiness\b|\bfinance\b|\bstartup\b|\bothers\b',
-                                                 na=False)), 'SaaS', "")
+                                                 na=False)), 'SaaS', final_article['SaaS_headline'])
 
-        final_article['Telecom'] = np.where((final_article['_source.headline'].str.contains(
-            r'\bairtel\b|\bverizon\b|\bvodafone\b|\bjio\b|\bbsnl\b', case=False, na=False)) & (
-                                                final_article['ML_category'].str.contains(r'\bbusiness\b|\bothers\b',
-                                                                                          na=False)), 'Telecom', "")
+        final_article['telecom_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'prepaid plan|vodafone idea|5g network|\bjio\b|recharge plan|airtel|vodafone|\btelecom\b|unlimited data',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bothers\b|\beconomy\b|\bfinance\b', na=False)), 'telecom', "")
+        final_article['telecom'] = np.where(
+            (final_article['_source.body'].str.contains(r'prepaid plan|recharge plan', case=False, na=False)) & (
+                final_article['ML_category'].str.contains(r'\bbusiness\b|\bothers\b|\beconomy\b|\bfinance\b',
+                                                          na=False)), 'telecom', final_article['telecom_headline'])
 
+        final_article['VC_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'venture capitalists|\bvc\b|funding alert|venture capitalists|funding round|sequoia capital|vision fund|angel investor|raised funding|startup raised|capital investor',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\btech\b|\bbusiness\b|\bfinance\b|\bstartup\b|\bothers\b', na=False)), 'VC', "")
         final_article['VC'] = np.where((final_article['_source.body'].str.contains(
-            r'\bventure capitalists\b|\bvc\b|\bventure capitalist\b', case=False, na=False)) & (
-                                           final_article['ML_category'].str.contains(
-                                               r'\btech\b|\bbusiness\b|\bfinance\b|\bstartup\b|\bothers\b', na=False)),
-                                       'VC', "")
+            r'funding alert|venture capitalists|funding round|venture capital|sequoia capital|vision fund|angel investor|raised funding|startup raised|capital investor',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\btech\b|\bbusiness\b|\bfinance\b|\bstartup\b|\bothers\b', na=False)), 'VC', final_article['VC_headline'])
+
+        final_article['logistics_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'logistics|agarwal packers|blue dart|container corporation|dhl express|fedex express|first flight|gati ltd|transport corporation',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bfinance\b|\bstartup\b|\bothers\b|\bmarkets\b|\beconomy\b', na=False)) & (
+                                                           ~final_article['ML_category'].str.contains(r'\blogistics\b',
+                                                                                                      na=False)),
+                                                       'logistics', "")
+        final_article['logistics'] = np.where(
+            (final_article['_source.body'].str.contains(r'logistics', case=False, na=False)) & (
+                final_article['ML_category'].str.contains(
+                    r'\bbusiness\b|\bfinance\b|\bstartup\b|\bothers\b|\bmarkets\b|\beconomy\b', na=False)) & (
+                ~final_article['ML_category'].str.contains(r'\blogistics\b', na=False)), 'logistics',
+            final_article['logistics_headline'])
+
+        final_article['startup_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'startup|start-up|funding alert|funding round|private equity|series round|venture capital firm|vision fund|crowdfunding',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bfinance\b|\bothers\b|\bmarkets\b', na=False)) & (
+                                                         ~final_article['ML_category'].str.contains(r'\bstartup\b',
+                                                                                                    na=False)),
+                                                     'startup', "")
+        final_article['startup'] = np.where((final_article['_source.body'].str.contains(
+            r'funding alert|funding round|private equity|series round|venture capital firm|vision fund|startup',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bfinance\b|\bothers\b|\bmarkets\b', na=False)) & (
+                                                ~final_article['ML_category'].str.contains(r'\bstartup\b', na=False)),
+                                            'startup', final_article['startup_headline'])
+
+        final_article['travel_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'cruise|travel to|travel advice|places to visit|best trip', case=False, na=False)) & (
+                                                        final_article['ML_category'].str.contains(
+                                                            r'\bbusiness\b|\bfinance\b|\bothers\b|\bentertainment\b|\blifestyle\b',
+                                                            na=False)) & (
+                                                        ~final_article['ML_category'].str.contains(r'\btravel\b',
+                                                                                                   na=False)), 'travel',
+                                                    "")
+        final_article['travel'] = np.where(
+            (final_article['_source.body'].str.contains(r'places to visit|best trip', case=False, na=False)) & (
+                final_article['ML_category'].str.contains(
+                    r'\bbusiness\b|\bfinance\b|\bothers\b|\bentertainment\b|\blifestyle\b', na=False)) & (
+                ~final_article['ML_category'].str.contains(r'\btravel\b', na=False)), 'travel',
+            final_article['travel_headline'])
+
+        final_article['food_headline'] = np.where((final_article['_source.headline'].str.contains(
+            r'recipe|healthy eating|healthy diet|\bdiet\b|fruit|vegetable|\bmeal\b|beverage|\bfood\b|breakfast|lunch|restaurant|brunch|snacks|eating',
+            case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bothers\b|\bentertainment\b|\blifestyle\b|\bhealth\b', na=False)) & (
+                                                      ~final_article['ML_category'].str.contains(r'\bfood\b',
+                                                                                                 na=False)), 'food', "")
+        final_article['food'] = np.where((final_article['_source.body'].str.contains(
+            r'recipe|healthy eating|healthy diet', case=False, na=False)) & (final_article['ML_category'].str.contains(
+            r'\bbusiness\b|\bothers\b|\bentertainment\b|\blifestyle\b|\bhealth\b', na=False)) & (
+                                             ~final_article['ML_category'].str.contains(r'\bfood\b', na=False)), 'food',
+                                         final_article['food_headline'])
 
         final_article['final_cat_1'] = final_article['final_cat_1'].str.replace('others', "")
 
-        unmerged_columns = ['index', '_id', '_index', '_type', '_score', '_source.domain',
-                            '_source.url', '_source.updated_at', '_source.type', '_source.headline',
-                            '_source.published_at', '_source.body', '_source.section',
-                            '_source.top_image_url', '_source.authors', '_source.isTestSample',
-                            '_source.lang', 'headline_body', 'ML_category', 'journalist_id', 'name']
-
-        merged_columns = []
-        for i in final_article.columns:
-            if i not in unmerged_columns:
-                merged_columns.append(i)
+        merged_columns = ['final_cat_1', 'final_cat_2', 'agriculture', 'oil_and_energy', 'aviation', 'blockchain',
+                          'cybersecurity', 'consumer_tech', 'e_commerce', 'fintech', 'fmcg', 'hr', 'infrastructure',
+                          'IT', 'SaaS', 'telecom', 'VC', 'logistics', 'startup', 'travel', 'food']
 
         final_article['list'] = final_article[merged_columns].values.tolist()
+
         final_article['all_category'] = final_article['list'].apply(' '.join)
+
         final_article['all_category'] = final_article['all_category'].str.strip()
         final_article['all_category'] = final_article['all_category'].str.replace('\s+', ', ')
 
@@ -341,9 +445,7 @@ def predict():
         top2 = top_prob['top2'][0]
         second_largest = round(top_prob['2nd-largest'][0], ndigits=2)
         largest = round(top_prob['largest'][0], ndigits=2)
-        category = 'Categories are: {}'.format(all_categories) + '. ' + 'For {} the probabity is {}'.format(top1,
-                                                                                                            largest) + ' and ' + 'for {} the probabity is {}'.format(
-            top2, second_largest)
+        category = 'Category: {}.'.format(all_categories)
 
     return render_template('home.html', prediction=category)
 
