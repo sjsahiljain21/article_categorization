@@ -1,0 +1,7 @@
+wordnet
+pros_cons
+reuters
+porter_test
+universal_tagset
+punkt
+rslp
